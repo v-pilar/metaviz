@@ -14,7 +14,8 @@ Description: A compilation of functions to create visually appealing and informa
     additional evidence contour funnel plots, and sunset funnel plots. In addition, functionalities 
     for visual inference with the funnel plot in the context of meta-analysis are provided.
     As a new addition to the package, three wineq plots compare fixed-effect and random-effects models,
-    and a forest plot for three-level meta-analysis is available.
+    and a forest plot for three-level meta-analysis is available, plus a function that provides study-level
+    descriptive statistics for the TLMA.
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
