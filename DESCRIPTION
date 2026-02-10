@@ -33,12 +33,12 @@ Imports:
     moments (>= 0.14.1),
     tidyr (>= 1.0.0),
     ggbeeswarm (>= 0.7.2),
-    ggnewscale (>= 0.5.1)
+    ggnewscale (>= 0.5.1),
+    psymetadata (>= 1.0.1)
 Suggests:
     Cairo (>= 1.5-9),
     knitr,
-    rmarkdown,
-    psymetadata (>= 1.0.1)
+    rmarkdown
 Depends:
     R (>= 3.2.0)
 RoxygenNote: 7.3.2
