@@ -64,3 +64,26 @@ More details and corresponding references can be found in the respective help fi
 (\code{help(mozart)}, \code{help(homeopath)}, \code{help(brainvol)}, \code{help(exrehab)}).
 }
 
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/Mkossmeier/metaviz}
+  \item Report bugs at \url{https://github.com/Mkossmeier/metaviz/issues}
+}
+
+}
+\author{
+\strong{Maintainer}: Michael Kossmeier \email{michael.kossmeier@univie.ac.at}
+
+Authors:
+\itemize{
+  \item Ulrich S. Tran \email{ulrich.tran@univie.ac.at}
+  \item Martin Voracek \email{martin.voracek@univie.ac.at}
+}
+
+Other contributors:
+\itemize{
+  \item Verena Pilar \email{verena.pilar@univie.ac.at}
+}
+
+}
