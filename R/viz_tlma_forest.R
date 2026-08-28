@@ -268,7 +268,8 @@ viz_tlma_forest <- function (x, #study_ID, effect_ID,
       studydata$type[row] <- "singleES"
     }
     else {
-      model_ID <- metafor::rma.uni(yi = subdata$yi, sei = subdata$se, method = "REML", data = subdata)
+      model_ID <- metafor::rma.uni(yi = subdata$yi, sei = subdata$se, method = "REML", data = subdata,
+                                   level = confidence_level_ci*100)
 
       diagonal <- 1/(subdata$vi + var_ws)
       D <- diag(diagonal)

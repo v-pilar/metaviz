@@ -171,7 +171,8 @@ viz_tlma_studyinfo <- function (x, confidence_level_ci = 0.95) {
       studydata$type[row] <- "singleES"
     }
     else {
-      model_ID <- metafor::rma.uni(yi = subdata$yi, sei = subdata$se, method = "REML", data = subdata)
+      model_ID <- metafor::rma.uni(yi = subdata$yi, sei = subdata$se, method = "REML", data = subdata,
+                                   level = confidence_level_ci*100)
 
       diagonal <- 1/(subdata$vi + var_ws)
       D <- diag(diagonal)
