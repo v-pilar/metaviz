@@ -4,8 +4,6 @@
 #'the overall effect of each study and the summary effect of a three-level meta-analysis.
 #'
 #'@param x metafor rma.mv object
-#'@param study_ID grouping variable for the study-level of the three-level meta-analysis that was used in the rma.mv model
-#'@param effect_ID grouping variable for the effect-level of the three-level meta-analysis that was used in the rma.mv model
 #'@param variant “classic” (default) or “thick” to create a classic or thick TLMA forest plot variant
 #'@param annotate_CI adds a right-hand side table to the plot containing the confidence intervals and number of effects of each study
 #'@param study_table custom table on the left-hand side of the plot that contains study information. Takes a dataframe as input
@@ -25,8 +23,9 @@
 #'@param xlab x-axis label
 #'@param ylab y-axis label
 #'@param title plot title
-#'@param confidence_level_ci numeric confidence level for the confidence intervals of the study effects
-#'@param confidence_level_pi numeric confidence level for the prediction interval of the summary effect
+#'@param confidence_level_ci numeric confidence level for the confidence intervals of the study effects.
+#'This argument is also used in the calculation of the median precision of an effect included in a study for additional grey error bars.
+#'@param prediction_level_pi numeric confidence level for the prediction interval of the summary effect
 #'@param show_nr_ES adds columns to the right-hand side table which shows the number of effects contained in the respective study
 #'@param x_limit determines the limits of the x-axis. Input is a numeric vector of length 2 (min, max).
 #'@param table_layout numeric layout matrix to customize the arrangement of the plot and tables
@@ -46,7 +45,7 @@
 #'information of the three-level meta-analysis.
 #'@return A forest plot containing point estimates for single effects, study effects and the overall result of a three-level
 #'meta-analysis is created using ggplot2.
-#'@author Verena Pilar <verena.pilar@univie.ac.at>
+#'@author Verena Pilar <verena.pilar@outlook.com>
 #'@references
 #'Fernández-Castilla, B., Declercq, L., Jamshidi, L., Beretvas, N., Onghena, P., & Van den Noortgate, W. (2020). Visual representations
 #'of meta-analyses of multiple outcomes: extensions to forest plots, funnel plots, and caterpillar plots. \emph{Methodology}, 16(\emph{4}), 299-315.
@@ -55,38 +54,37 @@
 #'Schild, A. H. E., & Voracek, M. (2015). Finding your way out of the forest without a trail of bread crumbs: Development and evaluation
 #'of two novel displays of forest plots. \emph{Research Synthesis Methods}, 6(\emph{1}), 74–86. https://doi.org/10.1002/jrsm.1125
 #'@examples
-#' library(metafor)
-#' library(psymetadata)
-#' # Extract wibbelink2017 data
-#' testdata <- wibbelink2017
+#' if (requireNamespace("psymetadata", quietly = TRUE)) {
 #'
-#' # Determine level 1 and 2 grouping variables for the three-level meta-analysis
-#' # study IDs = level 2
-#' ID <- testdata$study_id
-#' # effect IDs = level 1
-#' ID2 <- testdata$es_id
+#'   # Get wibbelink2017 data
+#'   testdata <- psymetadata::wibbelink2017
 #'
-#' # Calculate the three-level meta-analytic model
-#' testmodel <- rma.mv(yi,
-#'                     vi,
-#'                     random = ~ 1 | ID/ID2,
-#'                     tdist = TRUE,
-#'                     data = testdata,
-#'                     method = "REML")
 #'
-#' # Plot the TLMA forest plot
-#' viz_tlma_forest(x = testmodel, ID, ID2)
-#' # Plot the thick variant of the TLMA forest plot with a table showing study effects plus their confidence intervals
-#' viz_tlma_forest(x = testmodel, ID, ID2, variant = "thick", annotate_CI = TRUE)
+#'   # Calculate the three-level meta-analytic model
+#'   testmodel <- metafor::rma.mv(yi,
+#'                                vi,
+#'                                random = ~ 1 | study_id/es_id,
+#'                                tdist = TRUE,
+#'                                data = testdata,
+#'                                method = "REML")
+#'
+#'   # Plot the TLMA forest plot
+#'   viz_tlma_forest(x = testmodel)
+#'   # Plot the thick variant of the TLMA forest plot with a table showing study
+#'   # effects plus their confidence intervals
+#'   viz_tlma_forest(x = testmodel, variant = "thick", annotate_CI = TRUE)
+#' }
+
 
 #'@export
 
-viz_tlma_forest <- function (x, study_ID, effect_ID, variant="classic", median_precision = FALSE, median_precision_thick = TRUE,
+viz_tlma_forest <- function (x, #study_ID, effect_ID,
+                             variant="classic", median_precision = FALSE, median_precision_thick = TRUE,
                              annotate_CI=FALSE, study_table=NULL, summary_table=NULL,
                              table_headers=NULL, ordered=TRUE, clouds=TRUE, spread=0.3,
                              col=FALSE,  labels=NULL, xlab="Effect Size",
                              ylab=NULL, title=NULL, confidence_level_ci = 0.95,
-                             confidence_level_pi = 0.95, show_nr_ES = TRUE,
+                             prediction_level_pi = 0.95, show_nr_ES = TRUE,
                              x_limit=NULL, table_layout = NULL, line=TRUE,
                              linewidth=0.4, text_size=3, tick_col="firebrick"
 ) {
@@ -97,11 +95,23 @@ viz_tlma_forest <- function (x, study_ID, effect_ID, variant="classic", median_p
   #'@import metafor
   #'@importFrom magrittr %>%
   NULL
-  #'@import psymetadata
   #'@import ggbeeswarm
 
-  ID <- study_ID
-  ID2 <- effect_ID
+
+
+  cluster_vars <- all.vars(x$call$random)
+
+  if (!all(cluster_vars %in% names(x$data))) {
+    stop("At least one cluster variable (study and/or effect IDs) cannot be matched to the dataset.
+         Make sure the cluster variables used for model fitting are named the same as the
+         respective columns in the dataset.")
+  }
+
+  cluster_ids <- x$data[x$not.na, cluster_vars]
+  ID <- cluster_ids[,1]
+  ID2 <- cluster_ids[,2]
+
+
 
   n_ID <- max(ID)
 
@@ -123,6 +133,22 @@ viz_tlma_forest <- function (x, study_ID, effect_ID, variant="classic", median_p
   } else {
     # ID <- as.factor(ID)
     # ID2 <- as.factor(ID2)
+  }
+
+  if (!is.numeric(confidence_level_ci) ||
+      length(confidence_level_ci) != 1 ||
+      is.na(confidence_level_ci) ||
+      confidence_level_ci < 0.01 ||
+      confidence_level_ci > 0.99) {
+    stop("confidence_level_ci must be a single number between 0.01 and 0.99.")
+  }
+
+  if (!is.numeric(prediction_level_pi) ||
+      length(prediction_level_pi) != 1 ||
+      is.na(prediction_level_pi) ||
+      prediction_level_pi < 0.01 ||
+      prediction_level_pi > 0.99) {
+    stop("prediction_level_pi must be a single number between 0.01 and 0.99.")
   }
 
   group <- NULL
@@ -148,6 +174,15 @@ viz_tlma_forest <- function (x, study_ID, effect_ID, variant="classic", median_p
     data$labels <- labels
   }
 
+
+
+  # CI preparation
+  alpha <- 1 - confidence_level_ci
+  p_upper <- 1 - alpha / 2
+  z_crit <- stats::qnorm(p_upper)
+
+
+
   model <- x
 
   estimate <- round(model$b[1], 2)
@@ -157,14 +192,14 @@ viz_tlma_forest <- function (x, study_ID, effect_ID, variant="classic", median_p
 
 
   # PIs for overall effect
-  pred <- predict.rma(model, level = confidence_level_pi)
+  pred <- predict.rma(model, level = prediction_level_pi)
   pi_lb <- pred$pi.lb
   pi_ub <- pred$pi.ub
 
   # CIs
   data <- data %>%
-    mutate(ci_lb = yi - se * qnorm(0.975)) %>%
-    mutate(ci_ub = yi + se * qnorm(0.975))
+    mutate(ci_lb = yi - se * stats::qnorm(p_upper)) %>%
+    mutate(ci_ub = yi + se * stats::qnorm(p_upper))
 
   ##############################################################################
   ##############################################################################
@@ -177,6 +212,17 @@ viz_tlma_forest <- function (x, study_ID, effect_ID, variant="classic", median_p
   ##############################################################################
 
   # creating a separate dataset for study-level information
+
+  yi_ID <- NULL # to avoid no visible binding for global variable note
+  se_ID <- NULL
+  k <- NULL
+  ci_lb_ID <- NULL
+  ci_ub_ID <- NULL
+  ci_lb_ES <- NULL
+  ci_ub_ES <- NULL
+  weight_ID <- NULL
+  type <- NULL
+
   studydata = data.frame(
     yi_ID = numeric(n_ID),
     se_ID = numeric(n_ID),
@@ -206,17 +252,18 @@ viz_tlma_forest <- function (x, study_ID, effect_ID, variant="classic", median_p
   ###############################
 
 
-  for (i in 1:max(data$ID)){
+  #for (i in 1:max(data$ID)){
+  for (i in unique(data$ID)){
     subdata<-subset(data, ID==i)
     uni=nrow(subdata)
 
     if (uni==1) {
       studydata$yi_ID[row] <- subdata$yi
       studydata$se_ID[row] <- subdata$se
-      studydata$ci_lb_ID[row] <-  subdata$yi - (subdata$se * 1.96)
-      studydata$ci_ub_ID[row] <-  subdata$yi + (subdata$se * 1.96)
-      studydata$ci_lb_ES[row] <- subdata$yi - (subdata$se * 1.96)
-      studydata$ci_ub_ES[row] <- subdata$yi + (subdata$se * 1.96)
+      studydata$ci_lb_ID[row] <-  subdata$yi - (subdata$se * z_crit)
+      studydata$ci_ub_ID[row] <-  subdata$yi + (subdata$se * z_crit)
+      studydata$ci_lb_ES[row] <- subdata$yi - (subdata$se * z_crit)
+      studydata$ci_ub_ES[row] <- subdata$yi + (subdata$se * z_crit)
       studydata$weight_ID[row] <- 1 / subdata$se^2
       studydata$type[row] <- "singleES"
     }
@@ -240,9 +287,9 @@ viz_tlma_forest <- function (x, study_ID, effect_ID, variant="classic", median_p
       studydata$se_ID[row] <- model_ID$se
       studydata$ci_lb_ID[row] <-  model_ID$ci.lb
       studydata$ci_ub_ID[row] <-  model_ID$ci.ub
-      studydata$ci_lb_ES[row]<-model_ID$b - 1.96*median(subdata$se)
-      studydata$ci_ub_ES[row]<-model_ID$b + 1.96*median(subdata$se)
-      studydata$weight_ID[row]<-1/ var_effect
+      studydata$ci_lb_ES[row]<- model_ID$b - z_crit * stats::median(subdata$se)
+      studydata$ci_ub_ES[row]<- model_ID$b + z_crit * stats::median(subdata$se)
+      studydata$weight_ID[row]<- 1/ var_effect
       studydata$type[row] <- "multiES"
     }
 
@@ -267,6 +314,8 @@ viz_tlma_forest <- function (x, study_ID, effect_ID, variant="classic", median_p
   #################
 
   # calculate relative weight of studies
+  rel_weight <- NULL # to avoid no visible binding for global variable note
+
   sum_weight_ID <- sum(unique(data$weight_ID))
   data <- data %>%
     mutate(rel_weight = weight_ID / sum_weight_ID)
@@ -331,6 +380,10 @@ viz_tlma_forest <- function (x, study_ID, effect_ID, variant="classic", median_p
 
 
   # for "errorbar" thickness corresponding to study weights
+  y_min <- NULL # to avoid no visible binding for global variable note
+  y_max <- NULL
+  y <- NULL
+
   data <- data %>%
     mutate (y_max = ID_study + rel_weight / (4 * max(rel_weight)),
             y_min = ID_study - rel_weight / (4 * max(rel_weight)))
@@ -346,7 +399,7 @@ viz_tlma_forest <- function (x, study_ID, effect_ID, variant="classic", median_p
   est_wd = ifelse(max(as.numeric(data$ID_study) >= 150), 0.8, 0.5)
 
   # position of the summary effect
-  summary_yi <- coef(model)
+  summary_yi <- stats::coef(model)
   summary_se <- model$se
 
   poly_pos <- ID_summary
@@ -364,12 +417,12 @@ viz_tlma_forest <- function (x, study_ID, effect_ID, variant="classic", median_p
 
   # set color map
   ran_pltt <- function(n) {
-    hues <- runif(n)
-    lightness <- runif(n, 0.3, 0.5)
+    hues <- stats::runif(n)
+    lightness <- stats::runif(n, 0.3, 0.5)
     saturation <- 1
 
     # Convert HSL to RGB using the grDevices package
-    colors <- hcl(h = hues * 360, c = saturation * 100, l = lightness * 100)
+    colors <- grDevices::hcl(h = hues * 360, c = saturation * 100, l = lightness * 100)
     return(colors)
   }
 
@@ -385,7 +438,7 @@ viz_tlma_forest <- function (x, study_ID, effect_ID, variant="classic", median_p
   }
 
 
-  color_map <- setNames(pltt, study_data$ID)
+  color_map <- stats::setNames(pltt, study_data$ID)
 
 
 
@@ -689,7 +742,7 @@ viz_tlma_forest <- function (x, study_ID, effect_ID, variant="classic", median_p
       #J <- stringr::str_pad(J, width = 3, side = "left")
       J <- c(paste(J, "  "), "", "")
       CI <- paste(x_hat, " [", lb, ", ", ub, "]", sep = "")
-      PI <- paste(confidence_level_pi*100, "% PI", " [", round(pi_lb,2), ", ", round(pi_ub,2), "]", sep = "")
+      PI <- paste(prediction_level_pi*100, "% PI", " [", round(pi_lb,2), ", ", round(pi_ub,2), "]", sep = "")
 
 
       # with or without J

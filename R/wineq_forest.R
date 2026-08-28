@@ -19,7 +19,7 @@
 #'@param summary_col_FE determines color of the fixed-effect model summary effect
 #'@param summary_col_REML determines color of the random-effects model summary effect
 #'@param col “weights”: colors point estimates (classic variant), errorbars (thick variant) or raindrops (rain variant)
-#'according to weight change on a gradient from blue to red, “BW”: greyscale version
+#'according to weight change on a gradient from blue to red, “BW”: greyscale version, Note: the rain variant is only available in color)
 #'@param errorbar_col boolean argument that determines whether the errorbars of the classic variant are colored
 #'according to weight change (“TRUE”) or in black (“FALSE”)
 #'@param text_size determines text size within the plot
@@ -56,7 +56,7 @@
 #'novel displays of forest plots. \emph{Research Synthesis Methods}, \emph{6},
 #'74-86.
 #'@return A wineq forest plot is created by use of ggplot2.
-#'@author Verena Pilar <verena.pilar@univie.ac.at>
+#'@author Verena Pilar <verena.pilar@outlook.com>
 #'@examples
 #' library(metafor)
 #' # Arranging the data according to effect size to faciliate the identification of small-study effects
@@ -105,6 +105,26 @@ wineq_forest <- function(x, group = NULL, variant = "classic", method = "REML",
     n <- length(es)
 
 
+    # filtering study_labels to account for rows containing NAs
+    if(any(!x$not.na)) {
+      warning("The dataset contains at least one missing value, only complete cases are used.")
+      if(!is.null(study_labels)) {
+        if(NROW(study_labels) == nrow(x$data)) {    # using NROW to account for labs possibly being a vector or a data frame
+          study_labels <- study_labels[x$not.na]
+        } else {
+          warning("Length of the study_labels argument doesn't match the length of the dataset. Argument is ignored")
+          study_labels <- 1:n
+        }
+
+      } else {
+        study_labels <- 1:n
+      }
+      if(!is.null(group)) {
+        group <- group[x$not.na]
+      }
+    }
+
+
     # check if group argument has the right length
     if(!is.null(group) & (length(group) != length(es))) {
       warning("length of supplied group vector does not correspond to the number of studies; group argument is ignored.")
@@ -122,6 +142,9 @@ wineq_forest <- function(x, group = NULL, variant = "classic", method = "REML",
       no.levels <- ncol(x$X) - 1
       group <- factor(apply(as.matrix(x$X[, -1])*rep(1:no.levels, each = n), 1, sum))
     }
+
+
+
   } else {
     # input is matrix or data.frame with effect sizes and standard errors in the first two columns
     if((is.data.frame(x) || is.matrix(x)) && ncol(x) >= 2) { # check if a data.frame or matrix with at least two columns is supplied
@@ -130,9 +153,9 @@ wineq_forest <- function(x, group = NULL, variant = "classic", method = "REML",
         warning("The effect sizes or standard errors contain missing values, only complete cases are used.")
         study_labels <- study_labels[stats::complete.cases(x[, c(1, 2)])]
         if(!is.null(group)) {
-          group <- group[stats::complete.cases(x)]
+          group <- group[stats::complete.cases(x[, c(1, 2)])]  # added [, c(1, 2)]
         }
-        x <- x[stats::complete.cases(x), ]
+        x <- x[stats::complete.cases(x[, c(1, 2)]), ]  # added [, c(1, 2)]
       }
       # check if input is numeric
       if(!is.numeric(x[, 1]) || !is.numeric(x[, 2])) {
@@ -270,6 +293,13 @@ wineq_forest <- function(x, group = NULL, variant = "classic", method = "REML",
     study_labels <- 1:n
   }
 
+  # if(!is.null(study_labels) && length(study_labels) != n) {
+  #   study_labels <- study_labels[stats::complete.cases(x[, c(1, 2)])]
+  #   #warning("Argument study_labels has wrong length and is ignored.")
+  # } else if (is.null(study_labels)) {
+  #   study_labels <- 1:n
+  #   }
+
   # if not exactly one name for every subgroup is suppied the default is used
   if(is.null(summary_label_FE) || length(summary_label_FE) != k || is.null(summary_label_REML) || length(summary_label_REML) != k) {
     if(!is.null(summary_label_REML) && length(summary_label_REML) != k) {
@@ -325,7 +355,6 @@ wineq_forest <- function(x, group = NULL, variant = "classic", method = "REML",
   }
 
   ID <- ids(group, n = n)
-
 
 
 
@@ -390,6 +419,15 @@ wineq_forest <- function(x, group = NULL, variant = "classic", method = "REML",
     legbreaks_labs <- c("0   ", 0.1, 0.4, 0.7, 1, 1.3, 1.6, 1.9, 2.2, 2.5, "3<")
 
     leg_colors <- c("#00c0e0", "#2be0ff", "#c7faff", "#dbd9d9", "#dbd9d9", "#c7adb7", "#ad5c6a", "#a82342", "#70020f", "#000000")
+
+
+    xmin <- NULL # to avoid no visible binding for global variable note
+    xmax <- NULL
+    ymin <- NULL
+    ymax <- NULL
+    fill <- NULL
+    y <- NULL
+    label <- NULL
 
     # Create data frame for segments
     leg_df <- data.frame(
@@ -700,8 +738,8 @@ wineq_forest <- function(x, group = NULL, variant = "classic", method = "REML",
           legend_grob <- leg_grob
 
         } else{
-          get_legend <- function(my_plot) {
-            tmp <- ggplotGrob(my_plot)
+          get_legend <- function(p) {
+            tmp <- ggplotGrob(p)
             leg <- gtable::gtable_filter(tmp, "guide-box")
             return(leg)
           }
@@ -751,8 +789,8 @@ wineq_forest <- function(x, group = NULL, variant = "classic", method = "REML",
             legend_grob <- leg_grob
 
           } else{
-            get_legend <- function(my_plot) {
-              tmp <- ggplotGrob(my_plot)
+            get_legend <- function(p) {
+              tmp <- ggplotGrob(p)
               leg <- gtable::gtable_filter(tmp, "guide-box")
               return(leg)
             }

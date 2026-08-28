@@ -29,7 +29,7 @@
 #'the random effects model as well as contribute a lot to heterogeneity
 #'@return A baujat plot which contains y-axis values for both a fixed-effect and
 #'a random-effects model connected by an arrow is created using ggplot2.
-#'@author Verena Pilar <verena.pilar@univie.ac.at>
+#'@author Verena Pilar <verena.pilar@outlook.com>
 #'@references Baujat, B., Mahé, C., Pignon, J. - P. & Hill, C. (2002). A graphical
 #'method for exploring heterogeneity in meta-analyses: Application to a meta-analysis
 #'of 65 trials. \emph{Statistics in Medicine}, 21(\emph{18}): 2641–2652.
@@ -49,7 +49,8 @@
 #' # using a rma.uni model as input
 #' wineq_baujat(x = mozart_r)
 #'
-#' # Adding study name labels to the right-most studies on the x-axis and determining how many studies shall be labeled
+#' # Adding study name labels to the right-most studies on the x-axis and
+#' # determining how many studies shall be labeled
 #' wineq_baujat(x = mozart_r, labs = mozart$study_name, nr_labs = 5)
 
 #'@export
@@ -65,7 +66,6 @@ wineq_baujat <- function (x, labs = NULL, nr_labs = 10,
   #'@import metafor
   #'@importFrom magrittr %>%
   NULL
-
 
   # preprocessing
 
@@ -89,6 +89,21 @@ wineq_baujat <- function (x, labs = NULL, nr_labs = 10,
       method <- "FE"
     }
 
+    if(any(!x$not.na)) {
+      warning("The dataset contains at least one missing value, only complete cases are used.")
+      if(!is.null(labs)) {
+        if(NROW(labs) == nrow(x$data)) {    # using NROW to account for labs possibly being a vector or a data frame
+          labs <- labs[x$not.na]
+        } else {
+          warning("Length of the labs argument doesn't match the length of the dataset. Argument is ignored")
+          labs <- NULL
+        }
+
+      } else {
+        labs <- NULL
+      }
+    }
+
   } else {
 
     # input is matrix or data.frame with effect sizes and standard errors in the first two columns
@@ -96,7 +111,9 @@ wineq_baujat <- function (x, labs = NULL, nr_labs = 10,
       # check if there are missing values
       if(sum(is.na(x[, 1])) != 0 || sum(is.na(x[, 2])) != 0) {
         warning("The effect sizes or standard errors contain missing values, only complete cases are used.")
-        study_labels <- study_labels[stats::complete.cases(x[, c(1, 2)])]
+        if(!is.null(labs)) {
+          labs <- labs[stats::complete.cases(x[, c(1, 2)])]
+        }
 
         x <- x[stats::complete.cases(x), ]
       }
@@ -154,8 +171,8 @@ wineq_baujat <- function (x, labs = NULL, nr_labs = 10,
     x_rem <- (((model_rem$yi) - c(beta_rem))^2) / model_rem$vi
     x_lab <- "Contribution to Overall Heterogeneity"
   } else {
-    x_fem <- resid(model_fem)^2 / (model_fem$tau2 + model_fem$vi)
-    x_rem <- resid(model_rem)^2 / (model_rem$tau2 + model_rem$vi)
+    x_fem <- stats::resid(model_fem)^2 / (model_fem$tau2 + model_fem$vi)
+    x_rem <- stats::resid(model_rem)^2 / (model_rem$tau2 + model_rem$vi)
     x_lab <- "Squared Pearson Residual"
   }
 
@@ -210,7 +227,9 @@ wineq_baujat <- function (x, labs = NULL, nr_labs = 10,
   # basis is y_vals_fem (= start of arrow), plus/minus a certain value
   plotdata$labs_pos <- ifelse(plotdata$y_rem <= plotdata$y_fem, -0.8, 1.5)
 
-  #
+
+  x_model <- NULL # to avoid no visible binding for global variable note
+
   if (method == "REML") {
     plotdata$x_model <- x_rem
   } else if (method == "FE") {
@@ -221,7 +240,7 @@ wineq_baujat <- function (x, labs = NULL, nr_labs = 10,
 
   max_labs <- plotdata %>%
     arrange(desc(x_model)) %>%
-    head(nr_labs)
+    utils::head(nr_labs)
 
   # creating plot
   p <- ggplot(data=plotdata, aes(x=x_model))+

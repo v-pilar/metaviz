@@ -9,13 +9,15 @@
 #'@param col boolean argument that determines whether Lorenz curves are colored by model or not.
 #'@param tables boolean argument that determines whether a large table with lots of statistical information is plotted below the coordinate system (“TRUE”)
 #'or whether a small table with information only on the Gini indices is shown within the coordinate system (“FALSE”)
+#' @param seed numeric argument that is used to set a random seed in order to provide reproducible bootstrapped Gini index
+#' confidence intervals. If seed == NULL the Gini index confidence intervals will vary slightly between instances of plotting.
 
 #'@details The function wineq_gini creates a plot containing two Lorenz curves (Lorenz, 1905) which represent the concentration of weights among the studies
 #'within a fixed-effect model and random-effects model, respectively. An adjoined table provides descriptive statistics about the study weights, as well as
-#'Gini indices which correspond to the Lorenz curves (Gini, 1912; Tran et al, 2021). The Gini quotient quantifies the discrepancy between the two Lorenz curves
-#'and serves as an effect size for cross-metaanalytic comparisons.
+#'Gini indices which correspond to the Lorenz curves (Gini, 1912; Tran et al, 2021). The Gini quotient quantifies the discrepancy between the two Lorenz curves,
+#'is directly related to heterogeneity and serves as an effect size for cross-metaanalytic comparisons.
 #'@return Two Lorenz curves are plotted in the same coordinate system accompanied by a table of statistical information.
-#'@author Verena Pilar <verena.pilar@univie.ac.at>
+#'@author Verena Pilar <verena.pilar@outlook.com>
 #'@references
 #'Gini, C. (1912). Variabilità e mutabilità (Variability and Mutability). C. Cuppini, Bologna, 156.
 #'
@@ -40,7 +42,7 @@
 
 #'@export
 
-wineq_gini <- function(x, type = "FEM_REM", col = FALSE, tables = TRUE) {
+wineq_gini <- function(x, type = "FEM_REM", col = FALSE, tables = TRUE, seed = NULL) {
 
   #'@import ggplot2
   #'@import dplyr
@@ -72,7 +74,7 @@ wineq_gini <- function(x, type = "FEM_REM", col = FALSE, tables = TRUE) {
       # check if there are missing values
       if(sum(is.na(x[, 1])) != 0 || sum(is.na(x[, 2])) != 0) {
         warning("The effect sizes or standard errors contain missing values, only complete cases are used.")
-        study_labels <- study_labels[stats::complete.cases(x[, c(1, 2)])]
+        #study_labels <- study_labels[stats::complete.cases(x[, c(1, 2)])]
 
         x <- x[stats::complete.cases(x), ]
       }
@@ -95,6 +97,8 @@ wineq_gini <- function(x, type = "FEM_REM", col = FALSE, tables = TRUE) {
 
 
   # creating df to use as data for the models
+  yi <- NULL # to avoid no visible binding for global variable note
+
   df <- data.frame (
     yi = es,
     se = se
@@ -115,7 +119,16 @@ wineq_gini <- function(x, type = "FEM_REM", col = FALSE, tables = TRUE) {
 
   ### different data processing approach
 
-  df_fem <- data.frame(weights_fem = weights(model_fem),
+  weights_fem <- NULL # to avoid no visible binding for global variable note
+  weights_rem <- NULL
+  share_fem <- NULL
+  share_rem <- NULL
+  comp_share <- NULL
+  share_fem_c <- NULL
+  share_rem_c <- NULL
+
+
+  df_fem <- data.frame(weights_fem = stats::weights(model_fem),
                        ID = seq(from = 1, to = nrow(model_fem$data)))
   df_fem <- df_fem %>%
     mutate(share_fem = weights_fem/sum(weights_fem)*100) %>%
@@ -123,7 +136,7 @@ wineq_gini <- function(x, type = "FEM_REM", col = FALSE, tables = TRUE) {
     mutate(share_fem_c = cumsum(share_fem)/max(cumsum(share_fem))*100)
 
   # df for REM
-  df_rem <- data.frame(weights_rem = weights(model_rem),
+  df_rem <- data.frame(weights_rem = stats::weights(model_rem),
                        ID = seq(from = 1, to = nrow(model_rem$data)))
   df_rem <- df_rem %>%
     mutate(share_rem = weights_rem/sum(weights_rem)*100) %>%
@@ -134,12 +147,19 @@ wineq_gini <- function(x, type = "FEM_REM", col = FALSE, tables = TRUE) {
   gini_data <- gini_data %>%
     mutate(comp_share = seq(from = 1, to = nrow(gini_data))/nrow(gini_data)*100)
 
-  gini_data <- rbind(rep(0,length(gini_data)), gini_data)
 
+  if (!is.null(seed)) {
+    if (!(is.numeric(seed) &&
+          length(seed) == 1 &&
+          is.finite(seed))) {
+      warning("'seed' must be a single finite numeric value. The argument will be ignored. Bootstrapped Gini index confidence intervals will vary slightly between instances of plotting without a random seed.")
+      seed <- NULL
+    }
+    set.seed(seed) # for reproducible bootstrap CIs
+  } else {
+    message("Note: Bootstrapped Gini index confidence intervals will vary slightly between instances of plotting. For reproducible bootstrap confidence intervals provide a numeric input for the 'seed' argument.")
+  }
 
-
-
-  set.seed(42) # for reproducible bootstrap CIs
 
   # FEM
   gini_fem_all <- DescTools::Gini(gini_data$weights_fem, conf.level=.95, unbiased = FALSE)
@@ -171,6 +191,10 @@ wineq_gini <- function(x, type = "FEM_REM", col = FALSE, tables = TRUE) {
 
 
 
+  gini_data <- rbind(rep(0,length(gini_data)), gini_data)
+
+
+
   if (tables == TRUE) {
 
 
@@ -190,9 +214,14 @@ wineq_gini <- function(x, type = "FEM_REM", col = FALSE, tables = TRUE) {
     )
 
     # gathering descriptive data
+    FEM <- NULL # to avoid no visible binding for global variable note
+    REM <- NULL
+    Model <- NULL
+    weight <- NULL
+
     df_weights <- data.frame(
-      FEM = weights(model_fem),
-      REM = weights(model_rem)
+      FEM = stats::weights(model_fem),
+      REM = stats::weights(model_rem)
     )
 
     df_weights_long <- df_weights %>%
@@ -206,11 +235,11 @@ wineq_gini <- function(x, type = "FEM_REM", col = FALSE, tables = TRUE) {
       group_by(Model) %>%
       reframe(
         Mean = mean(weight),
-        Median = median(weight),
-        Sd = sd(weight),
+        Median = stats::median(weight),
+        Sd = stats::sd(weight),
         Min = min(weight),
         Max = max(weight),
-        IQR = IQR(weight),          # interquartile range
+        IQR = stats::IQR(weight),          # interquartile range
         Skewness = moments::skewness(weight),
         CV = DescTools::CoefVar(weight)     # coefficient of variation
       )

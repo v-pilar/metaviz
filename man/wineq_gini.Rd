@@ -4,7 +4,7 @@
 \alias{wineq_gini}
 \title{Lorenz curves for the comparison of study weight concentration of fixed-effect and random-effects models}
 \usage{
-wineq_gini(x, type = "FEM_REM", col = FALSE, tables = TRUE)
+wineq_gini(x, type = "FEM_REM", col = FALSE, tables = TRUE, seed = NULL)
 }
 \arguments{
 \item{x}{metafor rma.uni object conducted with method “FE” or “REML” (the chosen method of the input model makes no difference in the resulting plot)}
@@ -16,6 +16,9 @@ wineq_gini(x, type = "FEM_REM", col = FALSE, tables = TRUE)
 
 \item{tables}{boolean argument that determines whether a large table with lots of statistical information is plotted below the coordinate system (“TRUE”)
 or whether a small table with information only on the Gini indices is shown within the coordinate system (“FALSE”)}
+
+\item{seed}{numeric argument that is used to set a random seed in order to provide reproducible bootstrapped Gini index
+confidence intervals. If seed == NULL the Gini index confidence intervals will vary slightly between instances of plotting.}
 }
 \value{
 Two Lorenz curves are plotted in the same coordinate system accompanied by a table of statistical information.
@@ -27,8 +30,8 @@ in a fixed-effect and a random-effects model, respectively, based on the same da
 \details{
 The function wineq_gini creates a plot containing two Lorenz curves (Lorenz, 1905) which represent the concentration of weights among the studies
 within a fixed-effect model and random-effects model, respectively. An adjoined table provides descriptive statistics about the study weights, as well as
-Gini indices which correspond to the Lorenz curves (Gini, 1912; Tran et al, 2021). The Gini quotient quantifies the discrepancy between the two Lorenz curves
-and serves as an effect size for cross-metaanalytic comparisons.
+Gini indices which correspond to the Lorenz curves (Gini, 1912; Tran et al, 2021). The Gini quotient quantifies the discrepancy between the two Lorenz curves,
+is directly related to heterogeneity and serves as an effect size for cross-metaanalytic comparisons.
 }
 \examples{
 library(metafor)
@@ -54,5 +57,5 @@ Tran, U. S., Lallai, T., Gyimesi, M., Baliko, J., Ramazanova, D., & Voracek, M. 
 A practical primer and shiny app for measures of statistical inequality and concentration.\emph{ Frontiers in Psychology}, 12, 716164.
 }
 \author{
-Verena Pilar <verena.pilar@univie.ac.at>
+Verena Pilar <verena.pilar@outlook.com>
 }

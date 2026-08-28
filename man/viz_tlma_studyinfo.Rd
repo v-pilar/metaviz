@@ -4,14 +4,10 @@
 \alias{viz_tlma_studyinfo}
 \title{A dataframe containing information on the study effects of a three-level meta-analysis}
 \usage{
-viz_tlma_studyinfo(x, study_ID, effect_ID, confidence_level_ci = 0.95)
+viz_tlma_studyinfo(x, confidence_level_ci = 0.95)
 }
 \arguments{
 \item{x}{metafor rma.mv object}
-
-\item{study_ID}{grouping variable for the study-level of the three-level meta-analysis that was used in the rma.mv model}
-
-\item{effect_ID}{grouping variable for the effect-level of the three-level meta-analysis that was used in the rma.mv model}
 
 \item{confidence_level_ci}{numeric confidence level for the confidence intervals of the study effects}
 }
@@ -29,28 +25,24 @@ the study effect with its standard error and confidence intervals, and the weigh
 meta-analysis.
 }
 \examples{
-library(metafor)
-library(psymetadata)
-# Extract wibbelink2017 data
-testdata <- wibbelink2017
 
-# Determine level 1 and 2 grouping variables for the three-level meta-analysis
-# study IDs = level 2
-ID <- testdata$study_id
-# effect IDs = level 1
-ID2 <- testdata$es_id
+if (requireNamespace("psymetadata", quietly = TRUE)) {
+  # Get wibbelink2017 data
+  testdata <- psymetadata::wibbelink2017
 
-# Calculate the three-level meta-analytic model
-testmodel <- rma.mv(yi,
-                    vi,
-                    random = ~ 1 | ID/ID2,
-                    tdist = TRUE,
-                    data = testdata,
-                    method = "REML")
 
-# Create a table with study-level information
-viz_tlma_studyinfo(testmodel, ID, ID2)
+  # Calculate the three-level meta-analytic model
+  testmodel <- metafor::rma.mv(yi,
+                              vi,
+                              random = ~ 1 | study_id/es_id,
+                              tdist = TRUE,
+                              data = testdata,
+                              method = "REML")
+
+  # Create a table with study-level information
+  viz_tlma_studyinfo(testmodel)
+}
 }
 \author{
-Verena Pilar <verena.pilar@univie.ac.at>
+Verena Pilar <verena.pilar@outlook.com>
 }

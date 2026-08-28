@@ -6,7 +6,7 @@ Authors@R: c(
     person("Michael", "Kossmeier", email = "michael.kossmeier@univie.ac.at", role = c("cre", "aut")),
     person("Ulrich S.", "Tran", email = "ulrich.tran@univie.ac.at", role = c("aut")),
     person("Martin", "Voracek", email = "martin.voracek@univie.ac.at", role = c("aut")),
-    person("Verena", "Pilar", email = "verena.pilar@univie.ac.at")
+    person("Verena", "Pilar", email = "verena.pilar@outlook.com", role = c("aut"))
     )
 Description: A compilation of functions to create visually appealing and information-rich 
     plots of meta-analytic data using 'ggplot2'. Currently allows to create forest plots, 
@@ -35,11 +35,12 @@ Imports:
     tidyr (>= 1.0.0),
     ggbeeswarm (>= 0.7.2),
     ggnewscale (>= 0.5.1),
-    psymetadata (>= 1.0.1)
+    scales (>= 1.4.0) 
 Suggests:
     Cairo (>= 1.5-9),
     knitr,
-    rmarkdown
+    rmarkdown,
+    psymetadata (>= 1.0.1)
 Depends:
     R (>= 3.2.0)
 RoxygenNote: 7.3.2

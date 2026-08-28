@@ -3,8 +3,6 @@
 #'@description Provides a dataframe with information on the study effects of a three-level meta-analysis.
 #'
 #'@param x metafor rma.mv object
-#'@param study_ID grouping variable for the study-level of the three-level meta-analysis that was used in the rma.mv model
-#'@param effect_ID grouping variable for the effect-level of the three-level meta-analysis that was used in the rma.mv model
 #'@param confidence_level_ci numeric confidence level for the confidence intervals of the study effects
 #'
 #'@details The function viz_tlma_studyinfo creates a dataframe with information pertaining to the study effects of
@@ -13,38 +11,55 @@
 #'the study effect with its standard error and confidence intervals, and the weight of the study within the three-level
 #'meta-analysis.
 #'@return A dataframe containing statistical information about the study effects of a three-level meta-analysis is created.
-#'@author Verena Pilar <verena.pilar@univie.ac.at>
+#'@author Verena Pilar <verena.pilar@outlook.com>
 #'@examples
-#' library(metafor)
-#' library(psymetadata)
-#' # Extract wibbelink2017 data
-#' testdata <- wibbelink2017
 #'
-#' # Determine level 1 and 2 grouping variables for the three-level meta-analysis
-#' # study IDs = level 2
-#' ID <- testdata$study_id
-#' # effect IDs = level 1
-#' ID2 <- testdata$es_id
+#' if (requireNamespace("psymetadata", quietly = TRUE)) {
+#'   # Get wibbelink2017 data
+#'   testdata <- psymetadata::wibbelink2017
 #'
-#' # Calculate the three-level meta-analytic model
-#' testmodel <- rma.mv(yi,
-#'                     vi,
-#'                     random = ~ 1 | ID/ID2,
-#'                     tdist = TRUE,
-#'                     data = testdata,
-#'                     method = "REML")
 #'
-#' # Create a table with study-level information
-#' viz_tlma_studyinfo(testmodel, ID, ID2)
+#'   # Calculate the three-level meta-analytic model
+#'   testmodel <- metafor::rma.mv(yi,
+#'                               vi,
+#'                               random = ~ 1 | study_id/es_id,
+#'                               tdist = TRUE,
+#'                               data = testdata,
+#'                               method = "REML")
+#'
+#'   # Create a table with study-level information
+#'   viz_tlma_studyinfo(testmodel)
+#' }
 
 #' @export
 
-viz_tlma_studyinfo <- function (x, study_ID, effect_ID, confidence_level_ci = 0.95) {
+viz_tlma_studyinfo <- function (x, confidence_level_ci = 0.95) {
+
+
+  if (!is.numeric(confidence_level_ci) ||
+      length(confidence_level_ci) != 1 ||
+      is.na(confidence_level_ci) ||
+      confidence_level_ci < 0.01 ||
+      confidence_level_ci > 0.99) {
+    stop("confidence_level_ci must be a single number between 0.01 and 0.99.")
+  }
+
 
   group = NULL
 
-  ID <- study_ID
-  ID2 <- effect_ID
+
+  cluster_vars <- all.vars(x$call$random)
+
+  if (!all(cluster_vars %in% names(x$data))) {
+    stop("At least one cluster variable (study and/or effect IDs) cannot be matched to the dataset.
+         Make sure the cluster variables used for model fitting are named the same as the
+         respective columns in the dataset.")
+  }
+
+  cluster_ids <- x$data[x$not.na, cluster_vars]
+  ID <- cluster_ids[,1]
+  ID2 <- cluster_ids[,2]
+
 
   n_ID <- max(ID)
 
@@ -79,6 +94,12 @@ viz_tlma_studyinfo <- function (x, study_ID, effect_ID, confidence_level_ci = 0.
   data <- data.frame(yi, se, vi, ID, ID2, group)
 
 
+  # CI preparation
+  alpha <- 1 - confidence_level_ci
+  p_upper <- 1 - alpha / 2
+  z_crit <- stats::qnorm(p_upper)
+
+
   model <- x
 
   estimate <- round(model$b[1], 2)
@@ -88,8 +109,8 @@ viz_tlma_studyinfo <- function (x, study_ID, effect_ID, confidence_level_ci = 0.
 
   # CIs
   data <- data %>%
-    mutate(ci_lb = yi - se * qnorm(0.975)) %>%
-    mutate(ci_ub = yi + se * qnorm(0.975))
+    mutate(ci_lb = yi - se * stats::qnorm(p_upper)) %>%
+    mutate(ci_ub = yi + se * stats::qnorm(p_upper))
 
   ##############################################################################
   ##############################################################################
@@ -102,6 +123,17 @@ viz_tlma_studyinfo <- function (x, study_ID, effect_ID, confidence_level_ci = 0.
   ##############################################################################
 
   # creating a separate dataset for study-level information
+
+  yi_ID <- NULL # to avoid no visible binding for global variable note
+  se_ID <- NULL
+  k <- NULL
+  ci_lb_ID <- NULL
+  ci_ub_ID <- NULL
+  ci_lb_ES <- NULL
+  ci_ub_ES <- NULL
+  weight_ID <- NULL
+  type <- NULL
+
   studydata = data.frame(
     yi_ID = numeric(n_ID),
     se_ID = numeric(n_ID),
@@ -124,17 +156,17 @@ viz_tlma_studyinfo <- function (x, study_ID, effect_ID, confidence_level_ci = 0.
   ###############################
 
 
-  for (i in 1:max(data$ID)){
+  for (i in unique(data$ID)){
     subdata<-subset(data, ID==i)
     uni=nrow(subdata)
 
     if (uni==1) {
       studydata$yi_ID[row] <- subdata$yi
       studydata$se_ID[row] <- subdata$se
-      studydata$ci_lb_ID[row] <-  subdata$yi - (subdata$se * 1.96)
-      studydata$ci_ub_ID[row] <-  subdata$yi + (subdata$se * 1.96)
-      studydata$ci_lb_ES[row] <- subdata$yi - (subdata$se * 1.96)
-      studydata$ci_ub_ES[row] <- subdata$yi + (subdata$se * 1.96)
+      studydata$ci_lb_ID[row] <-  subdata$yi - (subdata$se * z_crit)
+      studydata$ci_ub_ID[row] <-  subdata$yi + (subdata$se * z_crit)
+      studydata$ci_lb_ES[row] <- subdata$yi - (subdata$se * z_crit)
+      studydata$ci_ub_ES[row] <- subdata$yi + (subdata$se * z_crit)
       studydata$weight_ID[row] <- 1 / subdata$se^2
       studydata$type[row] <- "singleES"
     }
@@ -158,9 +190,9 @@ viz_tlma_studyinfo <- function (x, study_ID, effect_ID, confidence_level_ci = 0.
       studydata$se_ID[row] <- model_ID$se
       studydata$ci_lb_ID[row] <-  model_ID$ci.lb
       studydata$ci_ub_ID[row] <-  model_ID$ci.ub
-      studydata$ci_lb_ES[row]<-model_ID$b - 1.96*median(subdata$se)
-      studydata$ci_ub_ES[row]<-model_ID$b + 1.96*median(subdata$se)
-      studydata$weight_ID[row]<-1/ var_effect
+      studydata$ci_lb_ES[row]<- model_ID$b - z_crit * stats::median(subdata$se)
+      studydata$ci_ub_ES[row]<- model_ID$b + z_crit * stats::median(subdata$se)
+      studydata$weight_ID[row]<- 1/ var_effect
       studydata$type[row] <- "multiES"
     }
 

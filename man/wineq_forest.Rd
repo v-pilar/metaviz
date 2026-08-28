@@ -58,7 +58,7 @@ no difference in the resulting plot)}
 \item{summary_col_REML}{determines color of the random-effects model summary effect}
 
 \item{col}{“weights”: colors point estimates (classic variant), errorbars (thick variant) or raindrops (rain variant)
-according to weight change on a gradient from blue to red, “BW”: greyscale version}
+according to weight change on a gradient from blue to red, “BW”: greyscale version, Note: the rain variant is only available in color)}
 
 \item{errorbar_col}{boolean argument that determines whether the errorbars of the classic variant are colored
 according to weight change (“TRUE”) or in black (“FALSE”)}
@@ -139,5 +139,5 @@ novel displays of forest plots. \emph{Research Synthesis Methods}, \emph{6},
 74-86.
 }
 \author{
-Verena Pilar <verena.pilar@univie.ac.at>
+Verena Pilar <verena.pilar@outlook.com>
 }

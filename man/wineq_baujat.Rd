@@ -68,7 +68,8 @@ wineq_baujat(x = mozart[, c("d", "se")])
 # using a rma.uni model as input
 wineq_baujat(x = mozart_r)
 
-# Adding study name labels to the right-most studies on the x-axis and determining how many studies shall be labeled
+# Adding study name labels to the right-most studies on the x-axis and
+# determining how many studies shall be labeled
 wineq_baujat(x = mozart_r, labs = mozart$study_name, nr_labs = 5)
 }
 \references{
@@ -77,5 +78,5 @@ method for exploring heterogeneity in meta-analyses: Application to a meta-analy
 of 65 trials. \emph{Statistics in Medicine}, 21(\emph{18}): 2641–2652.
 }
 \author{
-Verena Pilar <verena.pilar@univie.ac.at>
+Verena Pilar <verena.pilar@outlook.com>
 }

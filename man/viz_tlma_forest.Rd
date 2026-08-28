@@ -6,8 +6,6 @@
 \usage{
 viz_tlma_forest(
   x,
-  study_ID,
-  effect_ID,
   variant = "classic",
   median_precision = FALSE,
   median_precision_thick = TRUE,
@@ -24,7 +22,7 @@ viz_tlma_forest(
   ylab = NULL,
   title = NULL,
   confidence_level_ci = 0.95,
-  confidence_level_pi = 0.95,
+  prediction_level_pi = 0.95,
   show_nr_ES = TRUE,
   x_limit = NULL,
   table_layout = NULL,
@@ -36,10 +34,6 @@ viz_tlma_forest(
 }
 \arguments{
 \item{x}{metafor rma.mv object}
-
-\item{study_ID}{grouping variable for the study-level of the three-level meta-analysis that was used in the rma.mv model}
-
-\item{effect_ID}{grouping variable for the effect-level of the three-level meta-analysis that was used in the rma.mv model}
 
 \item{variant}{“classic” (default) or “thick” to create a classic or thick TLMA forest plot variant}
 
@@ -75,9 +69,10 @@ Takes a dataframe as input which contains one row.}
 
 \item{title}{plot title}
 
-\item{confidence_level_ci}{numeric confidence level for the confidence intervals of the study effects}
+\item{confidence_level_ci}{numeric confidence level for the confidence intervals of the study effects.
+This argument is also used in the calculation of the median precision of an effect included in a study for additional grey error bars.}
 
-\item{confidence_level_pi}{numeric confidence level for the prediction interval of the summary effect}
+\item{prediction_level_pi}{numeric confidence level for the prediction interval of the summary effect}
 
 \item{show_nr_ES}{adds columns to the right-hand side table which shows the number of effects contained in the respective study}
 
@@ -113,29 +108,26 @@ Note: This function adapted parts of the forest_plot_3 function code by Fernánd
 information of the three-level meta-analysis.
 }
 \examples{
-library(metafor)
-library(psymetadata)
-# Extract wibbelink2017 data
-testdata <- wibbelink2017
+if (requireNamespace("psymetadata", quietly = TRUE)) {
 
-# Determine level 1 and 2 grouping variables for the three-level meta-analysis
-# study IDs = level 2
-ID <- testdata$study_id
-# effect IDs = level 1
-ID2 <- testdata$es_id
+  # Get wibbelink2017 data
+  testdata <- psymetadata::wibbelink2017
 
-# Calculate the three-level meta-analytic model
-testmodel <- rma.mv(yi,
-                    vi,
-                    random = ~ 1 | ID/ID2,
-                    tdist = TRUE,
-                    data = testdata,
-                    method = "REML")
 
-# Plot the TLMA forest plot
-viz_tlma_forest(x = testmodel, ID, ID2)
-# Plot the thick variant of the TLMA forest plot with a table showing study effects plus their confidence intervals
-viz_tlma_forest(x = testmodel, ID, ID2, variant = "thick", annotate_CI = TRUE)
+  # Calculate the three-level meta-analytic model
+  testmodel <- metafor::rma.mv(yi,
+                               vi,
+                               random = ~ 1 | study_id/es_id,
+                               tdist = TRUE,
+                               data = testdata,
+                               method = "REML")
+
+  # Plot the TLMA forest plot
+  viz_tlma_forest(x = testmodel)
+  # Plot the thick variant of the TLMA forest plot with a table showing study
+  # effects plus their confidence intervals
+  viz_tlma_forest(x = testmodel, variant = "thick", annotate_CI = TRUE)
+}
 }
 \references{
 Fernández-Castilla, B., Declercq, L., Jamshidi, L., Beretvas, N., Onghena, P., & Van den Noortgate, W. (2020). Visual representations
@@ -146,5 +138,5 @@ Schild, A. H. E., & Voracek, M. (2015). Finding your way out of the forest witho
 of two novel displays of forest plots. \emph{Research Synthesis Methods}, 6(\emph{1}), 74–86. https://doi.org/10.1002/jrsm.1125
 }
 \author{
-Verena Pilar <verena.pilar@univie.ac.at>
+Verena Pilar <verena.pilar@outlook.com>
 }

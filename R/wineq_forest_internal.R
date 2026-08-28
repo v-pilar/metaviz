@@ -23,6 +23,12 @@ internal_wineq_forest_classic <- function(plotdata, madata, summary_line = NULL,
   weight_REML <- 1/(plotdata$se^2 + madata$summary_tau2_REML[as.numeric(plotdata$group)])
   weight_FE <- 1/plotdata$se^2
 
+  # to avoid no visible binding for global variable note
+  rel_wc <- NULL
+  errorbar_color <- NULL
+  errorbar_BW <- NULL
+  plot_meth <- NULL
+
   plotdata$rel_weight_REML <- weight_REML/sum(weight_REML)
   plotdata$rel_weight_FE <- weight_FE/sum(weight_FE)
   plotdata$rel_wc <- plotdata$rel_weight_REML/plotdata$rel_weight_FE
@@ -226,11 +232,19 @@ internal_wineq_forest_thick <- function(plotdata, madata, summary_line = NULL,
   n <- nrow(plotdata)
   k <- length(levels(plotdata$group))
 
+  # to avoid no visible binding for global variable note
+  rel_wc <- NULL
+  errorbar_color <- NULL
+  errorbar_BW <- NULL
+  point_color <- NULL
+  point_BW <- NULL
+
   weight_REML <- 1/(plotdata$se^2 + madata$summary_tau2_REML[as.numeric(plotdata$group)])
   weight_FE <- 1/plotdata$se^2
   plotdata$rel_weight_REML <- weight_REML/sum(weight_REML)
   plotdata$rel_weight_FE <- weight_FE/sum(weight_FE)
   plotdata$rel_wc <- plotdata$rel_weight_REML/plotdata$rel_weight_FE
+
 
 
   if (method == "REML") {
@@ -470,6 +484,11 @@ internal_wineq_forest_rain <- function(plotdata, madata, summary_line = NULL,
 
   weight_REML <- 1/(plotdata$se^2 + madata$summary_tau2_REML[as.numeric(plotdata$group)])
   weight_FE <- 1/plotdata$se^2
+
+  # to avoid no visible binding for global variable note
+  rel_wc <- NULL
+  col_group <- NULL
+  tick_col <- NULL
 
   plotdata$rel_weight_REML <- weight_REML/sum(weight_REML)
   plotdata$rel_weight_FE <- weight_FE/sum(weight_FE)
