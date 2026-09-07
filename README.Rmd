@@ -16,6 +16,10 @@ knitr::opts_chunk$set(
 A compilation of functions to plot meta-analytic data using 'ggplot2'. Currently allows to 
 create forest plots, funnel plots, and many of their variants, such as rainforest plots, thick forest plots, additional evidence contour funnel plots, and sunset funnel plots. In addition, functionalities for visual inference with the funnel plot are provided.
 
+Includes the wineq plots for the comparison of fixed-effect and random-effects models, 
+specifically the wineq forest plot, wineq Gini plot and wineq Baujat plot,
+as well as a forest plot variant for three-level meta-analysis.
+
 ## Contact
 Questions, ideas, criticism: michael.kossmeier@univie.ac.at.
 
