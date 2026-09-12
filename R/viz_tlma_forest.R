@@ -78,8 +78,7 @@
 
 #'@export
 
-viz_tlma_forest <- function (x, #study_ID, effect_ID,
-                             variant="classic", median_precision = FALSE, median_precision_thick = TRUE,
+viz_tlma_forest <- function (x, variant="classic", median_precision = FALSE, median_precision_thick = TRUE,
                              annotate_CI=FALSE, study_table=NULL, summary_table=NULL,
                              table_headers=NULL, ordered=TRUE, clouds=TRUE, spread=0.3,
                              col=FALSE,  labels=NULL, xlab="Effect Size",
@@ -303,8 +302,10 @@ viz_tlma_forest <- function (x, #study_ID, effect_ID,
   data <- merge(data, studydata, by = "ID", all.x = TRUE)
 
   # arrange studydata for table plotting later
-  studydata <- studydata %>%
-    arrange(yi_ID)
+  if (ordered == TRUE) {
+    studydata <- studydata %>%
+      arrange(yi_ID)
+  }
 
   # extract study_table info after arranging
   if (!is.null(study_table)) {
