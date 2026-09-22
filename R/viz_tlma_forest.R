@@ -15,7 +15,7 @@
 #'The errorbar’s thickness denotes the number of effects contained in the study.
 #'@param median_precision_thick determines whether the thickness of the median precision errorbars represents the number of
 #'effect sizes contained within the respective study
-#'@param ordered orders the plot by effect size
+#'@param ordered orders the plot by effect size when TRUE
 #'@param clouds “TRUE”: shows the effects contained in each study as a cloud around the study effect. “FALSE”: only study effects are shown.
 #'@param spread determines how far the single effects spread around the study effect
 #'@param col colors single effects by study
@@ -80,7 +80,7 @@
 
 viz_tlma_forest <- function (x, variant="classic", median_precision = FALSE, median_precision_thick = TRUE,
                              annotate_CI=FALSE, study_table=NULL, summary_table=NULL,
-                             table_headers=NULL, ordered=TRUE, clouds=TRUE, spread=0.3,
+                             table_headers=NULL, ordered=FALSE, clouds=TRUE, spread=0.3,
                              col=FALSE,  labels=NULL, xlab="Effect Size",
                              ylab=NULL, title=NULL, confidence_level_ci = 0.95,
                              prediction_level_pi = 0.95, show_nr_ES = TRUE,
