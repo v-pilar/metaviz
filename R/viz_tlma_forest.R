@@ -461,10 +461,33 @@ viz_tlma_forest <- function (x, variant="classic", median_precision = FALSE, med
 
   # data for beeswarm
   data_multi <- data %>% filter(type == "multiES")
+
+  # coordinate system axes limits
   y_limit <- c(min(ID_study) - 3, max(ID_study) + 1.5)
+
   if(is.null(x_limit)) {
-    x_limit <- c(range(c(data$ci_lb_ID, data$ci_ub_ID))[1] - diff(range(c(data$ci_lb_ID, data$ci_ub_ID)))*0.05,
-                 range(c(data$ci_lb_ID, data$ci_ub_ID))[2] + diff(range(c(data$ci_lb_ID, data$ci_ub_ID)))*0.05)
+    if (median_precision == FALSE) {
+      all_x <- c(
+        studydata$ci_lb_ID,
+        studydata$ci_ub_ID,
+        data$yi
+      )
+    } else {
+      all_x <- c(
+        studydata$ci_lb_ID,
+        studydata$ci_ub_ID,
+        studydata$ci_lb_ES,
+        studydata$ci_ub_ES,
+        data$yi
+      )
+    }
+
+    x_range <- range(all_x, na.rm = TRUE)
+
+    x_limit <- c(
+      x_range[1] - diff(x_range) * 0.05,
+      x_range[2] + diff(x_range) * 0.05
+    )
   }
 
 
